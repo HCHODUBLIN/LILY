@@ -11,7 +11,3 @@ This repository contains the Python workflow developed during the COST Action LI
 - Normalisation of key fields (status, scale, impacts)
 - Outputs in JSON, NDJSON, and CSV formats
 - Step-by-step User Guide and training slides included
-
-## Installation
-```bash
-pip install -r requirements.txt
