@@ -11,3 +11,138 @@ This repository contains the Python workflow developed during the COST Action LI
 - Normalisation of key fields (status, scale, impacts)
 - Outputs in JSON, NDJSON, and CSV formats
 - Step-by-step User Guide and training slides included
+
+## LILY – HTML → structured data (OpenAI)
+
+Extracts structured fields from local HTML files with OpenAI, saving JSON/NDJSON/CSV outputs.
+
+1) Prerequisites
+
+Python 3.10+ (Anaconda recommended)
+
+An OpenAI API key
+
+Local copies of project HTML files
+
+2) Install dependencies
+
+In a clean environment:
+
+pip install openai pandas beautifulsoup4 python-dotenv requests
+
+3) Folder set-up
+
+Create a project folder like:
+
+project_root/
+  ├─ raw_html_data_1/        # put your .html files here
+  ├─ outputs/                # created automatically
+  ├─ .env                    # holds your API key
+  └─ CostAction_Controlled.py  # your Python file (this code)
+
+4) Configure your API key
+
+Create a file named .env in project_root:
+
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx
+
+5) Place input files
+
+Copy your source HTML files into:
+
+project_root/raw_html_data_1/
+
+6) Check the input path in the script
+
+Ensure the script uses a portable path (no hard-coded absolute paths):
+
+from pathlib import Path
+
+BASE_DIR = Path.cwd() / "raw_html_data_1"
+files = sorted([str(p) for p in BASE_DIR.glob("*.html")])
+
+
+This reads all .html files from raw_html_data_1 under the current working directory.
+
+7) Choose prompt strategy (Controlled vs Uncontrolled)
+
+Controlled (default): uses CONTROLLED_SOLUTION_TYPES in SYSTEM_PROMPT for consistent solution_types.
+
+Uncontrolled (flexible): make a second prompt string (e.g. SYSTEM_PROMPT_UNCONTROLLED) that omits the “Choose ONLY from this controlled list…” block and pass it to your extraction function for inductive coding.
+
+Minimal pattern:
+
+USE_CONTROLLED = True  # set False for Uncontrolled
+
+sys_prompt = SYSTEM_PROMPT if USE_CONTROLLED else SYSTEM_PROMPT_UNCONTROLLED
+# then pass sys_prompt into extract_with_gpt(_extended)
+
+8) Run the script
+
+From project_root:
+
+python CostAction_Controlled.py
+
+
+You should see console messages like:
+
+✅ Packages loaded successfully
+✅ Requests package loaded successfully
+Base dir: .../raw_html_data_1
+⚠️ schema mismatch ... (only if fields are missing/extra)
+✅ Saved JSON, NDJSON, and CSV → outputs
+
+9) Outputs (in outputs/)
+
+nbs_sample.json — full records (pretty-printed JSON)
+
+nbs_sample2.ndjson — line-delimited JSON (one record per line)
+
+nbs_sample2.csv — spreadsheet-friendly view (list fields JSON-encoded)
+
+Open the CSV first for a quick scan. Key fields include:
+
+title, summary, status, location_name, country, scale
+
+solution_types, challenges_addressed, health_linkages_primary
+
+impacts (array of {description, type}), governance, url_source, environmental_context
+
+10) Quality checks
+
+Spot-check a few rows against their source HTML.
+
+Compare Controlled vs Uncontrolled runs when categories look uncertain.
+
+Watch for schema mismatch warnings and inspect those files.
+
+11) Troubleshooting
+
+OPENAI_API_KEY is not set → Check .env location/name; run from project_root.
+
+API error 401/429 → Invalid key or rate limit; retry later or reduce batch size.
+
+JSON parse failed → Very long/dirty HTML; try truncating input:
+
+html = html[:100_000]
+
+
+or re-save a cleaner copy.
+
+schema mismatch → A field is missing/extra; review raw output for that file.
+
+No files found → Confirm raw_html_data_1 exists and filenames end with .html; confirm the BASE_DIR.glob("*.html") line above.
+
+12) Data privacy & costs
+
+Privacy: anonymise/redact sensitive personal data before tests.
+
+Costs: start with 5–10 files; keep temperature=0.0; gpt-4o-mini is cost-efficient.
+
+13) Reproducibility tips
+
+Keep a small test set for regression checks.
+
+Save prompt versions (Controlled/Uncontrolled) and note any edits.
+
+Log run parameters (date, model, prompt mode) alongside outputs.
